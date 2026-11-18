@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>馬券ジャッジ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+1p:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c1f17; --panel:#13301f; --line:#25503a; --turf:#2f7d4f;
+  --ink:#eef6ef; --mute:#9bb8a5; --gold:#ffd23f; --red:#ff4d5e; --chip:#1b3d29;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"M PLUS 1p",system-ui,sans-serif}
+body{padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 40px);
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 28px,transparent 28px 56px),
+    radial-gradient(120% 60% at 50% 0%,#1d4a31 0%,var(--bg) 70%);
+  min-height:100vh}
+.wrap{max-width:560px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;margin:6px 2px 16px}
+h1{font-family:"Dela Gothic One";font-size:28px;margin:0;letter-spacing:.04em;
+  background:linear-gradient(180deg,#fff 0%,var(--gold) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 small{display:block;font-family:"M PLUS 1p";font-size:11px;color:var(--mute);-webkit-text-fill-color:var(--mute);letter-spacing:.2em;font-weight:700}
+.ghost{background:none;border:1px solid var(--line);color:var(--mute);border-radius:999px;padding:7px 12px;font:700 12px "M PLUS 1p";cursor:pointer}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.card h2{font-size:14px;margin:0 0 12px;display:flex;align-items:center;gap:8px;color:var(--gold);letter-spacing:.08em}
+.card h2 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--gold);color:#1a1a1a;font-size:12px}
+label{font-size:11px;color:var(--mute);font-weight:700;display:block;margin-bottom:4px}
+input,select{width:100%;background:#0e2518;border:1px solid var(--line);color:var(--ink);border-radius:12px;padding:11px 12px;font:700 16px "M PLUS 1p";outline:none}
+input:focus,select:focus{border-color:var(--gold)}
+.types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.types button{flex:1 0 auto;background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:9px 10px;font:700 13px "M PLUS 1p";cursor:pointer}
+.types button.on{background:var(--gold);color:#1a1a1a;border-color:var(--gold)}
+.row{display:flex;gap:8px;align-items:flex-end}
+.row>div{flex:1}
+.nums{display:flex;gap:6px;align-items:center}
+.nums input{text-align:center;padding:11px 4px}
+.nums .sep{color:var(--mute);font-weight:800}
+.amount{display:flex;align-items:center;gap:6px}
+.amount span{color:var(--mute);font-weight:700}
+.quick{display:flex;gap:6px;margin-top:8px}
+.quick button{flex:1;background:none;border:1px dashed var(--line);color:var(--mute);border-radius:8px;padding:6px 0;font:700 12px "M PLUS 1p";cursor:pointer}
+.btn{width:100%;border:none;border-radius:14px;padding:14px;font:800 16px "M PLUS 1p";cursor:pointer;margin-top:12px}
+.btn.add{background:var(--turf);color:#fff}
+.btn.go{font-family:"Dela Gothic One";font-size:22px;letter-spacing:.1em;padding:18px;color:#1a1a1a;
+  background:linear-gradient(180deg,#fff27a,var(--gold) 50%,#e8a800);box-shadow:0 6px 0 #9c6f00,0 12px 24px rgba(255,210,63,.25)}
+.btn.go:active{transform:translateY(4px);box-shadow:0 2px 0 #9c6f00}
+.btn:disabled{opacity:.35;cursor:not-allowed;filter:grayscale(.6)}
+.err{color:var(--red);font-size:12px;font-weight:700;min-height:16px;margin-top:6px}
+.bets{display:flex;flex-direction:column;gap:8px}
+.bet{display:flex;align-items:center;gap:10px;background:#0e2518;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.bet .t{font-size:11px;font-weight:800;background:var(--chip);border:1px solid var(--line);padding:3px 7px;border-radius:6px;white-space:nowrap}
+.bet .c{flex:1;font-weight:800;font-size:17px;letter-spacing:.04em}
+.bet .a{color:var(--mute);font-weight:700;font-size:13px}
+.bet .x{background:none;border:none;color:var(--mute);font-size:18px;cursor:pointer;padding:0 2px}
+.empty{color:var(--mute);font-size:13px;text-align:center;padding:10px 0}
+.total{display:flex;justify-content:space-between;margin-top:10px;font-weight:800;font-size:14px;color:var(--mute)}
+.total b{color:var(--ink)}
+.places{display:flex;gap:8px}
+.places>div{flex:1;text-align:center}
+.places label{text-align:center}
+.places input{text-align:center;font-size:22px;padding:10px 4px}
+.pays{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.pay{display:flex;align-items:center;gap:8px;background:rgba(255,210,63,.08);border:1px solid rgba(255,210,63,.35);border-radius:12px;padding:8px 10px}
+.pay .l{flex:1;font-weight:800;font-size:14px}
+.pay .l small{display:block;color:var(--mute);font-size:10px}
+.pay input{width:120px;text-align:right;padding:8px 10px}
+.hint{font-size:11px;color:var(--mute);margin-top:6px;line-height:1.6}
+
+/* ===== overlay ===== */
+#ov{position:fixed;inset:0;z-index:50;display:none;overflow:hidden;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:24px}
+#ov.show{display:flex}
+#fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.ovbody{position:relative;z-index:2;width:100%;max-width:440px}
+.close{position:relative;z-index:3;margin-top:26px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:999px;padding:12px 26px;font:800 14px "M PLUS 1p";cursor:pointer;opacity:0;animation:fadein .4s 1.8s forwards}
+
+/* win */
+#ov.win{background:radial-gradient(circle at 50% 45%,#7a1020 0%,#2a0508 70%)}
+#ov.win::before,#ov.jack::before{content:"";position:absolute;left:50%;top:45%;width:240vmax;height:240vmax;margin:-120vmax 0 0 -120vmax;
+  background:repeating-conic-gradient(rgba(255,210,63,.22) 0 9deg,transparent 9deg 18deg);animation:spin 14s linear infinite}
+#ov.jack{background:radial-gradient(circle at 50% 45%,#5b16a8 0%,#12022a 70%);animation:hue 2s linear infinite}
+.flash{position:absolute;inset:0;background:#fff;z-index:4;pointer-events:none;animation:flash .7s ease-out forwards}
+.big{font-family:"Dela Gothic One";line-height:1;color:#fff}
+.win .big,.jack .big{font-size:min(26vw,128px);background:linear-gradient(180deg,#fff 10%,#ffe866 45%,#ff9d00 80%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 0 #7a3c00) drop-shadow(0 0 30px rgba(255,200,0,.7));animation:slam .6s cubic-bezier(.2,1.6,.4,1) both}
+.jack .big{font-size:min(20vw,104px)}
+.sub{font-weight:800;font-size:15px;letter-spacing:.3em;color:#ffe8a6;margin-bottom:6px;opacity:0;animation:fadein .4s .5s forwards}
+.money{font-family:"Dela Gothic One";font-size:min(13vw,56px);color:#fff;margin-top:18px;text-shadow:0 0 18px rgba(255,210,63,.9)}
+.money small{font-size:.45em;margin-left:4px}
+.detail{margin-top:10px;font-weight:700;font-size:13px;color:#ffe8a6;opacity:0;animation:fadein .4s 1.2s forwards;line-height:1.8}
+.shake{animation:shake .5s .1s}
+
+/* lose */
+#ov.lose{background:#2b2d30;animation:drain 1.6s ease forwards}
+.lose .big{font-size:30px;color:#8a8d91;font-family:"M PLUS 1p";font-weight:400;letter-spacing:.3em;animation:droop 2.2s ease forwards}
+.lose .money{font-family:"M PLUS 1p";font-weight:400;font-size:15px;color:#6d7074;text-shadow:none;margin-top:14px;opacity:0;animation:fadein 1s 1.4s forwards}
+.lose .detail{color:#6d7074;font-weight:400}
+.lose .close{background:none;border-color:#55585c;color:#8a8d91;animation-delay:2.4s}
+.leaf{position:absolute;top:-40px;font-size:28px;z-index:1;animation:leaf 6s linear forwards;filter:grayscale(.7)}
+
+/* torigami */
+#ov.tori{background:linear-gradient(180deg,#4a4a2a,#22220f)}
+.tori .big{font-size:min(16vw,72px);color:#d9d18a;animation:wobble 1s ease both}
+.tori .money{font-family:"M PLUS 1p";font-weight:800;font-size:20px;color:#d9d18a;text-shadow:none}
+.tori .detail{color:#bdb57a}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes hue{to{filter:hue-rotate(360deg)}}
+@keyframes flash{from{opacity:1}to{opacity:0}}
+@keyframes slam{0%{transform:scale(4);opacity:0}60%{opacity:1}100%{transform:scale(1)}}
+@keyframes fadein{to{opacity:1}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-10px,6px)}40%{transform:translate(9px,-7px)}60%{transform:translate(-6px,-4px)}80%{transform:translate(5px,5px)}}
+@keyframes drain{from{filter:saturate(1)}to{filter:saturate(0)}}
+@keyframes droop{0%{opacity:0;transform:translateY(-30px)}40%{opacity:1;transform:none}100%{opacity:.8;transform:translateY(14px) rotate(4deg)}}
+@keyframes leaf{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(40px,25vh) rotate(60deg)}50%{transform:translate(-30px,50vh) rotate(-20deg)}75%{transform:translate(30px,75vh) rotate(80deg)}100%{transform:translate(-10px,110vh) rotate(10deg)}}
+@keyframes wobble{0%{transform:scale(.3);opacity:0}50%{transform:scale(1.1) rotate(-4deg);opacity:1}70%{transform:rotate(3deg)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){#ov::before{animation:none!important}}
+
+.races{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.races button{flex:0 0 auto;background:var(--chip);border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:8px 14px;font:700 13px "M PLUS 1p";cursor:pointer;white-space:nowrap}
+.races button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.races button.done::after{content:" ✓";color:var(--gold)}
+.races .plus{border-style:dashed;color:var(--mute)}
+.racename{display:flex;gap:8px;margin-bottom:14px}
+.racename input{flex:1}
+.racename button{background:none;border:1px solid var(--line);color:var(--mute);border-radius:12px;padding:0 12px;font:700 12px "M PLUS 1p";cursor:pointer}
+.tabs{display:flex;background:#0e2518;border:1px solid var(--line);border-radius:12px;padding:3px;margin-bottom:12px}
+.tabs button{flex:1;background:none;border:none;color:var(--mute);padding:9px 0;border-radius:9px;font:700 13px "M PLUS 1p";cursor:pointer}
+.tabs button.on{background:var(--turf);color:#fff}
+.howto{font-size:12px;line-height:1.7;color:var(--mute);margin-bottom:10px}
+.howto b{color:var(--ink)}
+.paste{width:100%;height:96px;resize:none;border-radius:14px;border:2px dashed var(--line);font:700 14px "M PLUS 1p";padding:12px;outline:none;
+  color:transparent;caret-color:var(--gold);background:#0e2518 repeating-linear-gradient(-45deg,transparent 0 10px,rgba(255,255,255,.03) 10px 20px)}
+.paste::selection{background:transparent;color:transparent}
+.paste:focus{border-color:var(--gold)}
+.pastewrap{position:relative}
+.pastewrap .ph{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:var(--mute);font-weight:800;font-size:14px;text-align:center;line-height:1.5}
+.status{margin-top:10px;font-weight:800;font-size:13px;padding:10px 12px;border-radius:12px;display:none}
+.status.ok{display:block;background:rgba(80,200,120,.12);border:1px solid rgba(80,200,120,.4);color:#9ff0b8}
+.status.ng{display:block;background:rgba(255,77,94,.1);border:1px solid rgba(255,77,94,.4);color:#ffb3bb}
+.status small{display:block;font-weight:700;opacity:.8;margin-top:2px}
+.peek{margin-top:8px;font-size:12px;color:var(--mute)}
+.peek summary{cursor:pointer;font-weight:700}
+.peek pre{white-space:pre-wrap;font:12px/1.7 "M PLUS 1p";margin:6px 0 0;color:var(--ink)}
+.minor{background:none;border:none;color:var(--mute);font:700 12px "M PLUS 1p";text-decoration:underline;cursor:pointer;padding:6px 0;margin-top:4px}
+
+/* suspense */
+#ov.wait{background:#05110b}
+.wait .track{position:relative;height:70px;margin:30px 0 10px;border-bottom:3px solid #2f7d4f;overflow:hidden}
+.wait .track::after{content:"";position:absolute;right:8%;top:0;bottom:0;width:4px;background:repeating-linear-gradient(#fff 0 8px,#d00 8px 16px)}
+.wait .horse{position:absolute;bottom:0;left:-60px;font-size:52px;transform:scaleX(-1);animation:run 2.4s cubic-bezier(.5,0,.6,1) forwards}
+.wait .lbl{font-family:"Dela Gothic One";font-size:26px;letter-spacing:.2em;color:#fff;animation:blink .5s infinite alternate}
+.wait .race{color:var(--mute);font-weight:700;font-size:13px;letter-spacing:.2em}
+@keyframes run{to{left:calc(92% - 20px)}}
+@keyframes blink{to{opacity:.35}}
+
+.note{font-size:11px;line-height:1.8;color:var(--mute);text-align:center;margin:18px 4px 0;opacity:.85}
+.ovbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px;opacity:0;animation:fadein .4s 1.8s forwards}
+.ovbtns .close{margin-top:0;opacity:1;animation:none}
+.share{display:inline-flex;align-items:center;background:#000;color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:12px 22px;font:800 14px "M PLUS 1p";text-decoration:none}
+.lose .ovbtns{animation-delay:2.4s}
+.lose .share{background:none;border-color:#55585c;color:#8a8d91}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>馬券ジャッジ<small>BET RESULT CHECKER</small></h1>
+    <button class="ghost" id="demo">デモを入れる</button>
+  </header>
+
+  <div class="races" id="races"></div>
+  <div class="racename">
+    <input id="rname" placeholder="レース名（例：東京11R）">
+    <button id="rdel">削除</button>
+  </div>
+
+  <section class="card">
+    <h2><span class="n">1</span>買い目を入れる</h2>
+    <div class="types" id="types"></div>
+    <label>馬番</label>
+    <div class="nums" id="nums"></div>
+    <div style="margin-top:10px">
+      <label>金額</label>
+      <div class="amount"><input id="amt" type="number" inputmode="numeric" min="100" step="100" value="100"><span>円</span></div>
+      <div class="quick">
+        <button data-q="100">+100</button><button data-q="500">+500</button><button data-q="1000">+1000</button><button data-q="0">リセット</button>
+      </div>
+    </div>
+    <div class="err" id="addErr"></div>
+    <button class="btn add" id="add">＋ 買い目に追加</button>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">2</span>購入した馬券</h2>
+    <div class="bets" id="bets"></div>
+    <div class="total"><span>合計</span><b id="sum">0円</b></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">3</span>レース結果</h2>
+    <div class="tabs" id="mode">
+      <button data-m="paste">コピペで読み取り</button><button data-m="manual">手入力</button>
+    </div>
+
+    <div id="pastePane">
+      <div class="howto">JRA公式やnetkeibaのレース結果ページを開いたら、<b>画面を見ないで「全選択 → コピー」</b>して、下に貼り付けてね。貼った文字は見えないようになってるよ。</div>
+      <div class="pastewrap">
+        <textarea class="paste" id="paste" spellcheck="false" autocomplete="off"></textarea>
+        <div class="ph" id="ph">ここを長押しして<br>貼り付け</div>
+      </div>
+      <div class="status" id="pstat"></div>
+      <button class="minor" id="pclear">貼り付けをやり直す</button>
+    </div>
+
+    <div id="manualPane" style="display:none">
+      <div class="places">
+        <div><label>1着</label><input id="r1" type="number" inputmode="numeric" min="1" max="18"></div>
+        <div><label>2着</label><input id="r2" type="number" inputmode="numeric" min="1" max="18"></div>
+        <div><label>3着</label><input id="r3" type="number" inputmode="numeric" min="1" max="18"></div>
+      </div>
+      <div class="pays" id="pays"></div>
+      <div class="hint" id="payHint"></div>
+    </div>
+
+    <button class="btn go" id="go" disabled>結果発表！</button>
+    <details class="peek" id="peek" style="display:none"><summary>読み取った払戻を見る（ネタバレ注意）</summary><pre id="peekBody"></pre></details>
+  </section>
+  <footer class="note">
+    判定結果は参考です。払戻金は必ずJRA公式などでご確認ください。<br>
+    本アプリはJRA・netkeiba等とは一切関係ありません。<br>
+    入力内容はお使いの端末のブラウザ内にだけ保存されます。<br>
+    馬券の購入は20歳になってから。
+  </footer>
+</div>
+
+<div id="ov"><canvas id="fx"></canvas><div class="ovbody" id="ovbody"></div></div>
+<script>
+const TYPES={
+  tan:{label:'単勝',n:1}, fuku:{label:'複勝',n:1}, wakuren:{label:'枠連',n:2,waku:true},
+  umaren:{label:'馬連',n:2}, wide:{label:'ワイド',n:2}, umatan:{label:'馬単',n:2,ord:true},
+  sanfuku:{label:'3連複',n:3}, santan:{label:'3連単',n:3,ord:true}
+};
+const LABEL_MAP={'単勝':'tan','複勝':'fuku','枠連':'wakuren','馬連':'umaren','ワイド':'wide','馬単':'umatan','3連複':'sanfuku','三連複':'sanfuku','3連単':'santan','三連単':'santan'};
+function parseSeg(seg,type){
+  const t=TYPES[type],n=t.n,max=t.waku?8:18;
+  seg=seg.replace(/\d+\s*番?\s*人気/g,' ');
+  const chunks=[[]],amts=[];const re=/(\d+)\s*(円)?/g;let m;
+  while((m=re.exec(seg))){if(m[2]){amts.push(+m[1]);chunks.push([])}else chunks[chunks.length-1].push(+m[1])}
+  chunks.pop();
+  if(!amts.length)return[];
+  let combos;
+  if(chunks.every(c=>c.length===n))combos=chunks;
+  else if(chunks[0].length===n*amts.length&&chunks.slice(1).every(c=>!c.length))combos=amts.map((_,i)=>chunks[0].slice(i*n,i*n+n));
+  else combos=chunks.map(c=>c.slice(-n));
+  return amts.map((pay,i)=>({type,nums:combos[i],pay})).filter(e=>e.nums.length===n&&e.nums.every(x=>x>=1&&x<=max)&&(t.waku||new Set(e.nums).size===n)&&e.pay>=100&&e.pay%10===0);
+}
+function parseText(txt){
+  const re=/3連複|三連複|3連単|三連単|単勝|複勝|枠連|馬連|ワイド|馬単/g,marks=[];let m;
+  while((m=re.exec(txt)))marks.push({type:LABEL_MAP[m[0]],idx:m.index,start:re.lastIndex});
+  const out={};
+  marks.forEach((mk,i)=>{const e=parseSeg(txt.slice(mk.start,i+1<marks.length?marks[i+1].idx:undefined),mk.type);if(e.length)out[mk.type]=e});
+  return out;
+}
+function parseResult(raw){
+  const s=(raw||'').normalize('NFKC').replace(/(\d),(?=\d{3})/g,'$1');
+  const i=s.search(/払戻|払い戻し/);
+  let out=i>=0?parseText(s.slice(i)):{};
+  if(!Object.keys(out).length)out=parseText(s);
+  return out;
+}
+if(typeof module!=='undefined')module.exports={parseResult};
+
+const $=s=>document.querySelector(s);
+const yen=n=>Math.round(n).toLocaleString('ja-JP')+'円';
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const newRace=name=>({id:uid(),name:name||'',bets:[],mode:'paste',raw:'',manual:{r:['','',''],pays:{}},done:false});
+let cur='tan';
+let S=null;
+try{S=JSON.parse(localStorage.getItem('bakenJudge2')||'null')}catch(e){}
+if(!S||!Array.isArray(S.races)||!S.races.length){const r=newRace('レース1');S={races:[r],cur:r.id}}
+const save=()=>{try{localStorage.setItem('bakenJudge2',JSON.stringify(S))}catch(e){}};
+const R=()=>S.races.find(r=>r.id===S.cur)||S.races[0];
+
+const comboText=b=>{const t=TYPES[b.type];return (t.ord?b.nums:[...b.nums].sort((x,y)=>x-y)).join(t.ord?' → ':' - ')};
+const sameCombo=(type,a,b)=>TYPES[type].ord?a.join()===b.join():[...a].sort((x,y)=>x-y).join()===[...b].sort((x,y)=>x-y).join();
+const keyOf=b=>b.type+':'+comboText(b);
+
+/* ---------- races ---------- */
+function renderRaces(){
+  $('#races').innerHTML=S.races.map((r,i)=>`<button data-id="${r.id}" class="${r.id===S.cur?'on':''} ${r.done?'done':''}">${esc(r.name||'レース'+(i+1))}</button>`).join('')+'<button class="plus" data-id="+">＋ レース</button>';
+  $('#rname').value=R().name;
+}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('#races').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.id==='+'){const r=newRace('レース'+(S.races.length+1));S.races.push(r);S.cur=r.id}else S.cur=b.dataset.id;
+  save();renderAll();};
+$('#rname').oninput=e=>{R().name=e.target.value;save();
+  const i=S.races.indexOf(R());const b=$('#races').children[i];if(b)b.textContent=R().name||'レース'+(i+1)};
+$('#rdel').onclick=()=>{
+  if(S.races.length===1){const r=newRace('レース1');S.races=[r];S.cur=r.id}
+  else{const i=S.races.indexOf(R());S.races.splice(i,1);S.cur=S.races[Math.max(0,i-1)].id}
+  save();renderAll();};
+
+/* ---------- bet entry ---------- */
+function renderTypes(){
+  $('#types').innerHTML=Object.entries(TYPES).map(([k,t])=>`<button data-k="${k}" class="${k===cur?'on':''}">${t.label}</button>`).join('');
+  const t=TYPES[cur],sep=t.ord?'→':'-',max=t.waku?8:18;
+  $('#nums').innerHTML=Array.from({length:t.n},(_,i)=>(i?`<span class="sep">${sep}</span>`:'')+`<input type="number" inputmode="numeric" min="1" max="${max}" placeholder="${t.waku?'枠':i+1}">`).join('');
+}
+$('#types').onclick=e=>{const b=e.target.closest('button');if(!b)return;cur=b.dataset.k;renderTypes();$('#addErr').textContent=''};
+document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{const q=+b.dataset.q,a=$('#amt');a.value=q?(+a.value||0)+q:100});
+$('#add').onclick=()=>{
+  const t=TYPES[cur],max=t.waku?8:18;
+  const nums=[...$('#nums').querySelectorAll('input')].map(i=>parseInt(i.value,10));
+  const amt=parseInt($('#amt').value,10),err=$('#addErr');
+  if(nums.some(n=>!(n>=1&&n<=max)))return err.textContent=t.waku?'枠番は1〜8で入れてね':'馬番は1〜18で入れてね';
+  if(!t.waku&&new Set(nums).size!==nums.length)return err.textContent='同じ馬番が重なってるよ';
+  if(!(amt>=100)||amt%100)return err.textContent='金額は100円単位で入れてね';
+  err.textContent='';
+  R().bets.push({id:uid(),type:cur,nums,amount:amt});R().done=false;
+  $('#nums').querySelectorAll('input').forEach(i=>i.value='');
+  save();renderBets();renderResult();
+};
+function renderBets(){
+  const r=R();
+  $('#bets').innerHTML=r.bets.length?r.bets.map(b=>`<div class="bet"><span class="t">${TYPES[b.type].label}</span><span class="c">${comboText(b)}</span><span class="a">${yen(b.amount)}</span><button class="x" data-id="${b.id}" aria-label="削除">×</button></div>`).join('')
+    :'<div class="empty">まだ買い目がありません</div>';
+  $('#sum').textContent=yen(r.bets.reduce((s,b)=>s+b.amount,0));
+}
+$('#bets').onclick=e=>{const b=e.target.closest('.x');if(!b)return;R().bets=R().bets.filter(x=>x.id!==b.dataset.id);save();renderBets();renderResult()};
+
+/* ---------- result: paste ---------- */
+$('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;R().mode=b.dataset.m;save();renderResult()};
+$('#paste').addEventListener('input',e=>{R().raw=e.target.value;R().done=false;save();renderResult()});
+$('#pclear').onclick=()=>{R().raw='';$('#paste').value='';save();renderResult();$('#paste').focus()};
+function pasteStatus(){
+  const r=R(),st=$('#pstat'),parsed=parseResult(r.raw),types=Object.keys(parsed);
+  $('#ph').style.display=r.raw?'none':'grid';
+  $('#pclear').style.display=r.raw?'inline':'none';
+  if(!r.raw){st.className='status';return{ok:false}}
+  if(!types.length){st.className='status ng';st.innerHTML='払戻が見つからなかった…<small>結果ページ全体をコピーできているか確認してね</small>';return{ok:false}}
+  const missing=[...new Set(r.bets.map(b=>b.type))].filter(t=>!parsed[t]).map(t=>TYPES[t].label);
+  st.className='status '+(missing.length?'ng':'ok');
+  st.innerHTML=missing.length?`読み取りOK、でも ${missing.join('・')} の払戻が見つからない<small>このまま発表すると、その券種は「はずれ」扱いになるよ</small>`
+    :`読み取りOK！ 準備完了<small>${types.length}券種の払戻を確認（中身は発表まで秘密）</small>`;
+  return{ok:true,parsed};
+}
+
+/* ---------- result: manual ---------- */
+function manualResult(){const r=R().manual.r.map(v=>parseInt(v,10));return r.every(n=>n>=1&&n<=18)&&new Set(r).size===3?r:null}
+function isHitManual(b,r){
+  const [a,c,d]=b.nums,top3=new Set(r);
+  switch(b.type){
+    case'tan':return a===r[0];case'fuku':return top3.has(a);
+    case'umaren':return sameCombo('umaren',[a,c],[r[0],r[1]]);case'umatan':return a===r[0]&&c===r[1];
+    case'wide':return top3.has(a)&&top3.has(c);case'sanfuku':return sameCombo('sanfuku',b.nums,r);
+    case'santan':return a===r[0]&&c===r[1]&&d===r[2];case'wakuren':return null;
+  }
+}
+['#r1','#r2','#r3'].forEach((s,i)=>$(s).addEventListener('input',e=>{R().manual.r[i]=e.target.value;save();renderManual()}));
+$('#pays').oninput=e=>{const i=e.target;if(i.dataset.k){R().manual.pays[i.dataset.k]=i.value===''?'':parseInt(i.value,10);save();checkGo()}};
+function renderManual(){
+  const race=R(),r=manualResult(),box=$('#pays');
+  if(!r||!race.bets.length){box.innerHTML='';$('#payHint').textContent=race.bets.length?'1〜3着の馬番を入れてね':'';return}
+  const seen=new Set(),need=race.bets.filter(b=>isHitManual(b,r)!==false).filter(b=>{const k=keyOf(b);if(seen.has(k))return false;seen.add(k);return true});
+  box.innerHTML=need.map(b=>{const k=keyOf(b),w=b.type==='wakuren',v=race.manual.pays[k];
+    return `<div class="pay"><div class="l">${TYPES[b.type].label} ${comboText(b)}<small>${w?'当たりなら配当、はずれは0':'100円あたりの払戻'}</small></div><input type="number" inputmode="numeric" min="0" data-k="${k}" data-w="${w?1:''}" value="${v===undefined?'':v}" placeholder="${w?'0':'例 450'}"><span style="color:var(--mute);font-weight:700">円</span></div>`}).join('');
+  $('#payHint').textContent=need.length?'当たってる馬券の配当を入れてね':'入力完了！';
+}
+
+/* ---------- judge ---------- */
+function judge(){
+  const race=R();let bet=0,ret=0,maxPay=0;const lines=[];let order=null;
+  if(race.mode==='paste'){
+    const p=parseResult(race.raw);
+    race.bets.forEach(b=>{bet+=b.amount;const e=(p[b.type]||[]).find(e=>sameCombo(b.type,e.nums,b.nums));
+      if(e){const v=e.pay*b.amount/100;ret+=v;maxPay=Math.max(maxPay,e.pay);lines.push(`${TYPES[b.type].label} ${comboText(b)}　${yen(v)}`)}});
+    if(p.santan)order=p.santan[0].nums;
+  }else{
+    const r=manualResult();order=r;
+    race.bets.forEach(b=>{bet+=b.amount;const k=keyOf(b),pay=+race.manual.pays[k]||0;
+      if(isHitManual(b,r)===true||(b.type==='wakuren'&&pay>0)){const v=pay*b.amount/100;ret+=v;maxPay=Math.max(maxPay,pay);lines.push(`${TYPES[b.type].label} ${comboText(b)}　${yen(v)}`)}});
+  }
+  const kind=ret===0?'lose':ret<bet?'tori':(maxPay>=10000||ret>=bet*10)?'jack':'win';
+  return{bet,ret,prof:ret-bet,lines,order,kind,name:race.name};
+}
+function checkGo(){
+  const race=R();let ok=race.bets.length>0;
+  if(race.mode==='paste')ok=ok&&pasteStatus().ok;
+  else{ok=ok&&!!manualResult();$('#pays').querySelectorAll('input').forEach(i=>{const v=parseInt(i.value,10);if(i.dataset.w?!(v>=0):!(v>=100))ok=false})}
+  $('#go').disabled=!ok;
+}
+function renderResult(){
+  const race=R();
+  $('#mode').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===race.mode));
+  $('#pastePane').style.display=race.mode==='paste'?'':'none';
+  $('#manualPane').style.display=race.mode==='manual'?'':'none';
+  if($('#paste').value!==race.raw)$('#paste').value=race.raw;
+  ['#r1','#r2','#r3'].forEach((s,i)=>{if($(s).value!==race.manual.r[i])$(s).value=race.manual.r[i]});
+  if(race.mode==='paste')pasteStatus();else renderManual();
+  renderPeek();checkGo();
+}
+function renderPeek(){
+  const race=R(),pk=$('#peek');
+  if(!race.done||race.mode!=='paste'){pk.style.display='none';pk.open=false;return}
+  const p=parseResult(race.raw);pk.style.display='';
+  $('#peekBody').textContent=Object.keys(TYPES).filter(t=>p[t]).map(t=>`${TYPES[t].label}　`+p[t].map(e=>`${e.nums.join(TYPES[t].ord?'→':'-')} ${yen(e.pay)}`).join(' / ')).join('\n');
+}
+function renderAll(){renderRaces();renderTypes();renderBets();renderResult()}
+
+/* ---------- sound ---------- */
+let AC;
+function tone(f,t0,dur,type='square',vol=.12){
+  const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(0,AC.currentTime+t0);g.gain.linearRampToValueAtTime(vol,AC.currentTime+t0+.02);
+  g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+t0+dur);o.connect(g).connect(AC.destination);o.start(AC.currentTime+t0);o.stop(AC.currentTime+t0+dur+.05);return o;
+}
+function initAudio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();AC.resume();return true}catch(e){return false}}
+function play(kind){
+  if(!AC)return;
+  try{
+  if(kind==='drum'){for(let i=0;i<28;i++)tone(90+Math.random()*30,i*.085,.07,'triangle',.18);tone(70,2.4,.5,'sine',.3)}
+  else if(kind==='win'||kind==='jack'){
+    [[523,0,.12],[659,.12,.12],[784,.24,.12],[1047,.36,.5],[784,.62,.12],[1047,.76,.9]].forEach(([f,t,d])=>{tone(f,t,d,'square',.1);tone(f/2,t,d,'triangle',.12)});
+    if(kind==='jack')[1319,1568,2093].forEach((f,i)=>tone(f,1.1+i*.12,.6,'sawtooth',.06));
+  }else if(kind==='tori'){[[523,0],[659,.15],[587,.4]].forEach(([f,t])=>tone(f,t,.3,'triangle',.12))}
+  else{[[392,0,.45],[370,.5,.45],[349,1,.45],[330,1.5,1.4]].forEach(([f,t,d])=>{const o=tone(f,t,d,'sawtooth',.07);
+      if(d>1){o.frequency.setValueAtTime(f,AC.currentTime+t);o.frequency.linearRampToValueAtTime(f-25,AC.currentTime+t+d)}})}
+  }catch(e){}
+}
+
+/* ---------- confetti ---------- */
+let raf;
+function confetti(power){
+  const c=$('#fx'),x=c.getContext('2d'),dpr=devicePixelRatio||1;
+  c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.setTransform(dpr,0,0,dpr,0,0);
+  const cols=power>1?['#ff3b6b','#ffd23f','#3bd5ff','#8cff5a','#c15bff','#fff']:['#ffd23f','#ffe98a','#ff9d00','#fff','#ff5a5a'];
+  let P=[];const burst=n=>{for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=4+Math.random()*9*power;
+    P.push({x:innerWidth/2,y:innerHeight*.42,vx:Math.cos(a)*s,vy:Math.sin(a)*s-5,r:Math.random()*6.28,vr:(Math.random()-.5)*.4,w:5+Math.random()*7,h:3+Math.random()*5,c:cols[i%cols.length],coin:Math.random()<.18})}};
+  const rain=()=>{for(let i=0;i<3*power;i++)P.push({x:Math.random()*innerWidth,y:-10,vx:(Math.random()-.5)*2,vy:2+Math.random()*3,r:0,vr:(Math.random()-.5)*.3,w:6,h:4,c:cols[i%cols.length],coin:Math.random()<.3})};
+  burst(160*power);let t=0;cancelAnimationFrame(raf);
+  (function f(){t++;x.clearRect(0,0,innerWidth,innerHeight);
+    if(t<240)rain();if(t===50||t===110)burst(90*power);
+    P.forEach(p=>{p.vy+=.18;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);
+      if(p.coin){x.fillStyle='#ffcc00';x.beginPath();x.ellipse(0,0,7,7*Math.abs(Math.cos(p.r*2))+.1,0,0,6.28);x.fill();x.strokeStyle='#a66d00';x.lineWidth=1.5;x.stroke()}
+      else{x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r)))}x.restore()});
+    P=P.filter(p=>p.y<innerHeight+30);
+    if(P.length||t<240)raf=requestAnimationFrame(f)})();
+}
+function countUp(el,to,ms){const s=performance.now();(function f(n){const k=Math.min(1,(n-s)/ms),e=1-Math.pow(1-k,3);if(el)el.textContent=Math.round(to*e).toLocaleString('ja-JP');if(k<1)requestAnimationFrame(f)})(s)}
+
+/* ---------- share ---------- */
+function shareLink(J){
+  const nm=J.name?J.name+' ':'',pct=J.bet?Math.round(J.ret/J.bet*100):0,p=Math.round(J.prof).toLocaleString('ja-JP');
+  const text=J.kind==='jack'?`💰大的中💰\n${nm}+${p}円（回収率${pct}%）`
+    :J.kind==='win'?`🎉的中！\n${nm}+${p}円（回収率${pct}%）`
+    :J.kind==='tori'?`トリガミ…\n${nm}当たったのに ${p}円`
+    :`はずれ…\n${nm}−${Math.round(J.bet).toLocaleString('ja-JP')}円　次こそは`;
+  let url='';try{const h=location.hostname;if(location.protocol==='https:'&&!/claude|anthropic|usercontent/.test(h))url=location.href.split('#')[0]}catch(e){}
+  return 'https://twitter.com/intent/tweet?text='+encodeURIComponent(text+'\n#馬券ジャッジ')+(url?'&url='+encodeURIComponent(url):'');
+}
+const btns=J=>`<div class="ovbtns"><a class="share" href="${shareLink(J)}" target="_blank" rel="noopener">𝕏 でシェア</a><button class="close">閉じる</button></div>`;
+
+/* ---------- reveal ---------- */
+let timer;
+$('#go').onclick=()=>{
+  const J=judge(),ov=$('#ov'),body=$('#ovbody');
+  initAudio();clearTimeout(timer);cancelAnimationFrame(raf);
+  const fx=$('#fx');fx.getContext('2d').clearRect(0,0,fx.width,fx.height);
+  ov.querySelectorAll('.flash,.leaf').forEach(n=>n.remove());
+  ov.className='show wait';
+  body.innerHTML=`<div class="race">${esc(J.name||'')}</div><div class="track"><div class="horse">🏇</div></div><div class="lbl">判定中…</div>`;
+  play('drum');
+  timer=setTimeout(()=>{R().done=true;save();renderRaces();renderPeek();reveal(J)},2700);
+};
+function reveal(J){
+  const ov=$('#ov'),body=$('#ovbody'),{kind,bet,ret,prof,lines}=J;
+  ov.className='show '+kind;
+  const head=`<div style="font-size:12px;letter-spacing:.2em;opacity:.7;margin-bottom:10px">${esc(J.name||'')}${J.order?'　'+J.order.join(' - '):''}</div>`;
+  if(kind==='win'||kind==='jack'){
+    body.innerHTML=head+`<div class="sub">${kind==='jack'?'★ 万 馬 券 ★':'おめでとう！'}</div><div class="big">${kind==='jack'?'大的中':'的中!!'}</div>
+      <div class="money">+<span id="cu">0</span><small>円</small></div>
+      <div class="detail">払戻 ${yen(ret)}（投資 ${yen(bet)}・回収率 ${Math.round(ret/bet*100)}%）<br>${lines.join('<br>')}</div>
+      `+btns(J);
+    const fl=document.createElement('div');fl.className='flash';ov.appendChild(fl);
+    ov.classList.add('shake');setTimeout(()=>ov.classList.remove('shake'),700);
+    play(kind);confetti(kind==='jack'?2:1);
+    setTimeout(()=>countUp($('#cu'),prof,kind==='jack'?2400:1400),500);
+    try{navigator.vibrate&&navigator.vibrate([80,40,80,40,200])}catch(e){}
+  }else if(kind==='tori'){
+    body.innerHTML=head+`<div class="big">トリガミ…</div><div class="money">${Math.round(prof).toLocaleString('ja-JP')}円</div>
+      <div class="detail">当たってるのに負けてる<br>払戻 ${yen(ret)} ／ 投資 ${yen(bet)}<br>${lines.join('<br>')}</div>`+btns(J);
+    play('tori');
+  }else{
+    body.innerHTML=head+`<div class="big">はずれ</div><div class="money">−${yen(bet)}</div>
+      <div class="detail" style="animation-delay:2s">また次がある</div>`+btns(J);
+    const lf=document.createElement('div');lf.className='leaf';lf.textContent='🍂';lf.style.left=(30+Math.random()*40)+'%';ov.appendChild(lf);
+    play('lose');
+  }
+}
+$('#ov').onclick=e=>{if(e.target.classList.contains('close')){$('#ov').className='';cancelAnimationFrame(raf)}};
+
+/* ---------- demo ---------- */
+$('#demo').onclick=()=>{
+  const r=newRace('デモ 東京11R');
+  r.bets=[{id:uid(),type:'umaren',nums:[3,7],amount:1000},{id:uid(),type:'santan',nums:[7,3,12],amount:300},{id:uid(),type:'tan',nums:[5],amount:500}];
+  r.raw='払戻金\n単勝\t7\t1,230円\t3番人気\n複勝\t7\t250円\n3\t180円\n12\t410円\n馬連\t3-7\t1,840円\t5番人気\nワイド\t3-7\t620円\n7-12\t1,450円\n3-12\t900円\n馬単\t7-3\t3,980円\n3連複\t3-7-12\t5,230円\n3連単\t7-3-12\t12,560円\t38番人気';
+  S.races.push(r);S.cur=r.id;save();renderAll();
+};
+
+renderAll();
+</script>
+</body>
+</html>
